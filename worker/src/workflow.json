@@ -1,0 +1,314 @@
+{
+  "1": {
+    "inputs": {
+      "image": "INPUT_IMAGE.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": { "title": "Load Input Property Photo" }
+  },
+
+  "10": {
+    "inputs": {
+      "horizontal_angle": 30,
+      "vertical_angle": 10,
+      "zoom": 5,
+      "default_prompts": false,
+      "camera_view": false,
+      "image": ["1", 0]
+    },
+    "class_type": "QwenMultiangleCameraNode",
+    "_meta": { "title": "Generate 30° Pan Prompt" }
+  },
+
+  "11": {
+    "inputs": {
+      "clip_name": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+      "type": "qwen_image",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": { "title": "Load Qwen CLIP" }
+  },
+  "12": {
+    "inputs": {
+      "vae_name": "qwen_image_vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": { "title": "Load Qwen VAE" }
+  },
+  "13": {
+    "inputs": {
+      "unet_name": "Qwen-Image-Edit-2511-FP8_e4m3fn.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": { "title": "Load Qwen UNET" }
+  },
+  "14": {
+    "inputs": {
+      "lora_name": "Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors",
+      "strength_model": 1,
+      "model": ["13", 0]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": { "title": "Lightning 4-Step LoRA" }
+  },
+  "15": {
+    "inputs": {
+      "lora_name": "qwen-image-edit-2511-multiple-angles-lora.safetensors",
+      "strength_model": 1,
+      "model": ["14", 0]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": { "title": "Multi-Angle LoRA" }
+  },
+  "16": {
+    "inputs": {
+      "image": ["1", 0]
+    },
+    "class_type": "FluxKontextImageScale",
+    "_meta": { "title": "Scale Input Image" }
+  },
+
+  "20": {
+    "inputs": {
+      "shift": 3.1,
+      "model": ["15", 0]
+    },
+    "class_type": "ModelSamplingAuraFlow",
+    "_meta": { "title": "Qwen Model Sampling" }
+  },
+  "21": {
+    "inputs": {
+      "strength": 1,
+      "model": ["20", 0]
+    },
+    "class_type": "CFGNorm",
+    "_meta": { "title": "CFG Norm" }
+  },
+  "22": {
+    "inputs": {
+      "pixels": ["16", 0],
+      "vae": ["12", 0]
+    },
+    "class_type": "VAEEncode",
+    "_meta": { "title": "Encode Input Latent" }
+  },
+
+  "23": {
+    "inputs": {
+      "prompt": "",
+      "speak_and_recognation": { "__value__": [false, true] },
+      "clip": ["11", 0],
+      "vae": ["12", 0],
+      "image1": ["16", 0]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": { "title": "Negative Conditioning (Empty)" }
+  },
+  "24": {
+    "inputs": {
+      "prompt": ["10", 0],
+      "speak_and_recognation": { "__value__": [false, true] },
+      "clip": ["11", 0],
+      "vae": ["12", 0],
+      "image1": ["16", 0]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": { "title": "Positive Conditioning (Angle Prompt)" }
+  },
+
+  "25": {
+    "inputs": {
+      "reference_latents_method": "index_timestep_zero",
+      "conditioning": ["23", 0]
+    },
+    "class_type": "FluxKontextMultiReferenceLatentMethod",
+    "_meta": { "title": "Negative Reference Method" }
+  },
+  "26": {
+    "inputs": {
+      "reference_latents_method": "index_timestep_zero",
+      "conditioning": ["24", 0]
+    },
+    "class_type": "FluxKontextMultiReferenceLatentMethod",
+    "_meta": { "title": "Positive Reference Method" }
+  },
+
+  "27": {
+    "inputs": {
+      "seed": 123456789,
+      "steps": 4,
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": ["21", 0],
+      "positive": ["26", 0],
+      "negative": ["25", 0],
+      "latent_image": ["22", 0]
+    },
+    "class_type": "KSampler",
+    "_meta": { "title": "Qwen Sampler (4 steps)" }
+  },
+  "28": {
+    "inputs": {
+      "samples": ["27", 0],
+      "vae": ["12", 0]
+    },
+    "class_type": "VAEDecode",
+    "_meta": { "title": "Decode Panned Image" }
+  },
+  "29": {
+    "inputs": {
+      "filename_prefix": "droneshot/panned",
+      "images": ["28", 0]
+    },
+    "class_type": "SaveImage",
+    "_meta": { "title": "Save Panned Frame" }
+  },
+
+
+  "50": {
+    "inputs": {
+      "clip_name": "umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+      "type": "wan",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": { "title": "Load Wan CLIP" }
+  },
+  "51": {
+    "inputs": {
+      "vae_name": "wan_2.1_vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": { "title": "Load Wan VAE" }
+  },
+  "52": {
+    "inputs": {
+      "unet_name": "wan2.2_fun_i2v_14B_fp8.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": { "title": "Load Wan UNET (FLF2V)" }
+  },
+
+  "55": {
+    "inputs": {
+      "text": "smooth cinematic drone flyby of a real estate property, aerial photography, steady camera movement, professional real estate video, 4k quality",
+      "speak_and_recognation": { "__value__": [false, true] },
+      "clip": ["50", 0]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": { "title": "Positive Prompt" }
+  },
+  "56": {
+    "inputs": {
+      "text": "static, blurry, low quality, worst quality, JPEG artifacts, ugly, deformed, distorted, jittery, unstable camera, text, watermark",
+      "speak_and_recognation": { "__value__": [false, true] },
+      "clip": ["50", 0]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": { "title": "Negative Prompt" }
+  },
+
+  "60": {
+    "inputs": {
+      "shift": 5,
+      "model": ["52", 0]
+    },
+    "class_type": "ModelSamplingSD3",
+    "_meta": { "title": "Wan Model Sampling HIGH" }
+  },
+  "61": {
+    "inputs": {
+      "shift": 5,
+      "model": ["52", 0]
+    },
+    "class_type": "ModelSamplingSD3",
+    "_meta": { "title": "Wan Model Sampling LOW" }
+  },
+
+  "65": {
+    "inputs": {
+      "width": 832,
+      "height": 480,
+      "length": 81,
+      "batch_size": 1,
+      "positive": ["55", 0],
+      "negative": ["56", 0],
+      "vae": ["51", 0],
+      "start_image": ["1", 0],
+      "end_image": ["28", 0]
+    },
+    "class_type": "WanFirstLastFrameToVideo",
+    "_meta": { "title": "First-Last Frame to Video (Drone Shot)" }
+  },
+
+  "70": {
+    "inputs": {
+      "add_noise": "enable",
+      "noise_seed": 987654321,
+      "steps": 4,
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "start_at_step": 0,
+      "end_at_step": 2,
+      "return_with_leftover_noise": "enable",
+      "model": ["60", 0],
+      "positive": ["65", 0],
+      "negative": ["65", 1],
+      "latent_image": ["65", 2]
+    },
+    "class_type": "KSamplerAdvanced",
+    "_meta": { "title": "HIGH Noise Pass (Steps 0-2)" }
+  },
+  "71": {
+    "inputs": {
+      "add_noise": "disable",
+      "noise_seed": 0,
+      "steps": 4,
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "start_at_step": 2,
+      "end_at_step": 10000,
+      "return_with_leftover_noise": "disable",
+      "model": ["61", 0],
+      "positive": ["65", 0],
+      "negative": ["65", 1],
+      "latent_image": ["70", 0]
+    },
+    "class_type": "KSamplerAdvanced",
+    "_meta": { "title": "LOW Noise Pass (Steps 2+)" }
+  },
+
+  "75": {
+    "inputs": {
+      "samples": ["71", 0],
+      "vae": ["51", 0]
+    },
+    "class_type": "VAEDecode",
+    "_meta": { "title": "Decode Video Frames" }
+  },
+
+  "80": {
+    "inputs": {
+      "frame_rate": 24,
+      "loop_count": 0,
+      "filename_prefix": "droneshot/output",
+      "format": "video/h264-mp4",
+      "pix_fmt": "yuv420p",
+      "crf": 19,
+      "save_metadata": true,
+      "trim_to_audio": false,
+      "pingpong": false,
+      "save_output": true,
+      "images": ["75", 0]
+    },
+    "class_type": "VHS_VideoCombine",
+    "_meta": { "title": "Encode MP4 Output" }
+  }
+}
