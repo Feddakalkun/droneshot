@@ -93,7 +93,7 @@ function readPreview(f: File, cb: (url: string) => void) {
 }
 
 export default function UploadForm({ onSubmit, disabled }: UploadFormProps) {
-  const [mode, setMode] = useState<Mode>('single');
+  const [mode, setMode] = useState<Mode>('dual');
   const [startFile, setStartFile] = useState<File | null>(null);
   const [endFile, setEndFile] = useState<File | null>(null);
   const [startPreview, setStartPreview] = useState<string | null>(null);
@@ -143,16 +143,6 @@ export default function UploadForm({ onSubmit, disabled }: UploadFormProps) {
       <div className="flex justify-center">
         <div className="inline-flex bg-dark-900 rounded-xl p-1 border border-dark-800">
           <button
-            onClick={() => { setMode('single'); setEndFile(null); setEndPreview(null); }}
-            className={`px-5 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-              mode === 'single'
-                ? 'bg-dark-700 text-dark-100 shadow-sm'
-                : 'text-dark-400 hover:text-dark-200'
-            }`}
-          >
-            One photo
-          </button>
-          <button
             onClick={() => setMode('dual')}
             className={`px-5 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
               mode === 'dual'
@@ -161,6 +151,16 @@ export default function UploadForm({ onSubmit, disabled }: UploadFormProps) {
             }`}
           >
             Start &amp; end frame
+          </button>
+          <button
+            onClick={() => { setMode('single'); setEndFile(null); setEndPreview(null); }}
+            className={`px-5 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+              mode === 'single'
+                ? 'bg-dark-700 text-dark-100 shadow-sm'
+                : 'text-dark-400 hover:text-dark-200'
+            }`}
+          >
+            One photo (AI angle)
           </button>
         </div>
       </div>

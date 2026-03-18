@@ -97,8 +97,8 @@ export default function App() {
                 <span className="text-accent">in minutes.</span>
               </h1>
               <p className="text-lg text-dark-400 max-w-md mx-auto">
-                Upload a property photo and get a stunning flyby video
-                you can use in your listings.
+                Upload two angles of a property and get a stunning
+                flyby video for your listings.
               </p>
             </div>
 

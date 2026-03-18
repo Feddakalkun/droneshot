@@ -11,8 +11,9 @@ RUN apt-get update && apt-get install -y \
     && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
 
 # Python packages
-RUN pip install --no-cache-dir \
-    torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
+RUN pip install --no-cache-dir --no-build-isolation \
+    torch==2.6.0+cu124 torchvision==0.21.0+cu124 torchaudio==2.6.0+cu124 \
+    --index-url https://download.pytorch.org/whl/cu124
 
 RUN pip install --no-cache-dir \
     runpod \
@@ -47,27 +48,45 @@ RUN cd /app/ComfyUI/custom_nodes/ComfyUI-qwenmultiangle && pip install --no-cach
 COPY src/rp_handler.py /app/rp_handler.py
 COPY src/workflow.json /app/workflow.json
 
-# Network volume mount point for models
-# Models are NOT baked into the image — they live on a RunPod Network Volume
-# Mount at /workspace and symlink into ComfyUI/models
 ENV COMFY_URL=http://127.0.0.1:8188
 ENV WORKFLOW_PATH=/app/workflow.json
 ENV COMFY_OUTPUT_DIR=/app/ComfyUI/output
 
-# Create startup script that symlinks models from network volume
+# Copy model download script
+COPY scripts/download_models.sh /app/download_models.sh
+RUN chmod +x /app/download_models.sh
+
+# Startup: check for network volume models OR download to local cache, then run handler
 RUN echo '#!/bin/bash\n\
-echo "Setting up model symlinks from network volume..."\n\
-if [ -d "/workspace/models" ]; then\n\
+set -e\n\
+MODELS="/app/ComfyUI/models"\n\
+\n\
+# If network volume has models, symlink them\n\
+if [ -d "/runpod-volume/models" ]; then\n\
+    echo "Using network volume models..."\n\
+    for dir in /runpod-volume/models/*/; do\n\
+        dirname=$(basename "$dir")\n\
+        target="$MODELS/$dirname"\n\
+        rm -rf "$target" 2>/dev/null\n\
+        ln -sf "$dir" "$target"\n\
+        echo "  Linked: $dirname"\n\
+    done\n\
+elif [ -d "/workspace/models" ]; then\n\
+    echo "Using workspace models..."\n\
     for dir in /workspace/models/*/; do\n\
         dirname=$(basename "$dir")\n\
-        target="/app/ComfyUI/models/$dirname"\n\
-        if [ ! -L "$target" ] && [ -d "$dir" ]; then\n\
-            rm -rf "$target" 2>/dev/null\n\
-            ln -sf "$dir" "$target"\n\
-            echo "  Linked: $dirname"\n\
-        fi\n\
+        target="$MODELS/$dirname"\n\
+        rm -rf "$target" 2>/dev/null\n\
+        ln -sf "$dir" "$target"\n\
+        echo "  Linked: $dirname"\n\
     done\n\
+else\n\
+    echo "No volume found — downloading models to local cache..."\n\
+    export MODELS_DIR="$MODELS"\n\
+    mkdir -p "$MODELS"/{unet,clip,vae,loras}\n\
+    bash /app/download_models.sh\n\
 fi\n\
+\n\
 echo "Starting handler..."\n\
 exec python3 /app/rp_handler.py\n\
 ' > /app/start.sh && chmod +x /app/start.sh
